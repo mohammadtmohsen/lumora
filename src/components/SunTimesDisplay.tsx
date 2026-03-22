@@ -141,8 +141,8 @@ export function SunTimesDisplay({ sunTimes, isValid }: Props) {
   }
 
   const now = new Date();
-  const isSunriseNext = sunTimes.sunrise > now;
-  const isSunsetNext = !isSunriseNext && sunTimes.sunset > now;
+  const sunrisePassed = sunTimes.sunrise <= now;
+  const sunsetPassed = sunTimes.sunset <= now;
 
   return (
     <View
@@ -175,7 +175,7 @@ export function SunTimesDisplay({ sunTimes, isValid }: Props) {
             {formatTime(sunTimes.sunrise)}
           </Text>
           <Text style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 2 }}>
-            {isSunriseNext ? formatTimeUntil(sunTimes.sunrise) : 'passed'}
+            {sunrisePassed ? 'tomorrow ' : ''}{formatTimeUntil(sunTimes.sunrise)}
           </Text>
         </View>
 
@@ -201,7 +201,7 @@ export function SunTimesDisplay({ sunTimes, isValid }: Props) {
             {formatTime(sunTimes.sunset)}
           </Text>
           <Text style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 2 }}>
-            {isSunsetNext ? formatTimeUntil(sunTimes.sunset) : 'passed'}
+            {sunsetPassed ? 'tomorrow ' : ''}{formatTimeUntil(sunTimes.sunset)}
           </Text>
         </View>
       </View>

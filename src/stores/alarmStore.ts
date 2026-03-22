@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-
-
+import dayjs from 'dayjs';
 import { zustandMMKVStorage } from './storage';
 import type { Alarm, AlarmType, SunTimes } from '../models/types';
 import { computeTriggerTime, computeAbsoluteTriggerTime } from '../utils/timeUtils';
@@ -106,6 +105,7 @@ export const useAlarmStore = create<AlarmState>()(
 
       recalculateAllTriggerTimes: (sunTimes) => {
         set((state) => {
+          const now = new Date();
           const updated = { ...state.alarms };
           for (const [id, alarm] of Object.entries(updated)) {
             let triggerTime: Date | null = null;
@@ -114,6 +114,10 @@ export const useAlarmStore = create<AlarmState>()(
             } else if (sunTimes) {
               const eventTime = sunTimes[alarm.referenceEvent];
               triggerTime = computeTriggerTime(eventTime, alarm.offsetMinutes);
+              // If past, shift to tomorrow
+              if (triggerTime <= now) {
+                triggerTime = dayjs(triggerTime).add(1, 'day').toDate();
+              }
             }
             updated[id] = {
               ...alarm,

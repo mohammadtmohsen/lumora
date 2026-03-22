@@ -18,10 +18,15 @@ export function formatTime24(hour: number, minute: number): string {
 
 export function formatTimeUntil(date: Date): string {
   const now = dayjs();
-  const target = dayjs(date);
-  const diffMinutes = target.diff(now, 'minute');
+  let target = dayjs(date);
 
-  if (diffMinutes < 0) return 'passed';
+  // If the time has passed today, show countdown to tomorrow's occurrence
+  if (target.isBefore(now)) {
+    target = target.add(1, 'day');
+  }
+
+  const diffMinutes = target.diff(now, 'minute');
+  if (diffMinutes < 1) return 'in <1m';
   if (diffMinutes < 60) return `in ${diffMinutes}m`;
 
   const hours = Math.floor(diffMinutes / 60);
