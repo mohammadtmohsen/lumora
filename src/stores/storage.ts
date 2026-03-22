@@ -1,7 +1,7 @@
-import { createMMKV } from 'react-native-mmkv';
+import { MMKV } from 'react-native-mmkv';
 import type { StateStorage } from 'zustand/middleware';
 
-export const mmkv = createMMKV({ id: 'sunrise-storage' });
+export const mmkv = new MMKV({ id: 'sunrise-storage' });
 
 export const zustandMMKVStorage: StateStorage = {
   getItem: (name: string) => {
@@ -12,6 +12,6 @@ export const zustandMMKVStorage: StateStorage = {
     mmkv.set(name, value);
   },
   removeItem: (name: string) => {
-    mmkv.remove(name);
+    mmkv.delete(name);
   },
 };
