@@ -27,7 +27,7 @@ interface AlarmState {
   updateAlarm: (id: string, updates: Partial<Alarm>) => void;
   deleteAlarm: (id: string) => void;
   toggleAlarm: (id: string) => void;
-  recalculateAllTriggerTimes: (sunTimes: SunTimes) => void;
+  recalculateAllTriggerTimes: (sunTimes: SunTimes | null) => void;
   getAlarmsArray: () => Alarm[];
   getEnabledAlarms: () => Alarm[];
 }
@@ -108,16 +108,16 @@ export const useAlarmStore = create<AlarmState>()(
         set((state) => {
           const updated = { ...state.alarms };
           for (const [id, alarm] of Object.entries(updated)) {
-            let triggerTime: Date;
+            let triggerTime: Date | null = null;
             if (alarm.type === 'absolute') {
               triggerTime = computeAbsoluteTriggerTime(alarm.absoluteHour, alarm.absoluteMinute);
-            } else {
+            } else if (sunTimes) {
               const eventTime = sunTimes[alarm.referenceEvent];
               triggerTime = computeTriggerTime(eventTime, alarm.offsetMinutes);
             }
             updated[id] = {
               ...alarm,
-              nextTriggerAt: triggerTime.toISOString(),
+              nextTriggerAt: triggerTime?.toISOString() ?? null,
             };
           }
           return { alarms: updated };

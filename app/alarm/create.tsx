@@ -64,23 +64,13 @@ export default function CreateAlarmScreen() {
       absoluteMinute,
     });
 
-    // Compute trigger time and save it to store
+    // Schedule the alarm notification (trigger time is recalculated on home screen load)
     const alarm = useAlarmStore.getState().alarms[alarmId];
     if (alarm) {
-      let nextTriggerAt: string | null = null;
-      if (alarmType === 'absolute') {
-        nextTriggerAt = computeAbsoluteTriggerTime(absoluteHour, absoluteMinute).toISOString();
-      } else if (todaySunTimes) {
-        const eventTime = todaySunTimes[referenceEvent];
-        nextTriggerAt = computeTriggerTime(eventTime, offsetMinutes).toISOString();
-      }
-
-      // Schedule the alarm notification
       const notificationId = await scheduleAlarm(alarm, todaySunTimes);
-      useAlarmStore.getState().updateAlarm(alarmId, {
-        nextTriggerAt,
-        ...(notificationId ? { notificationId } : {}),
-      });
+      if (notificationId) {
+        useAlarmStore.getState().updateAlarm(alarmId, { notificationId });
+      }
     }
 
     router.back();

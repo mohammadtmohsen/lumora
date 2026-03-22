@@ -19,19 +19,17 @@ export function useAlarms(sunTimes: SunTimes | null) {
     getEnabledAlarms,
   } = useAlarmStore();
 
-  // Recalculate trigger times and reschedule when sun times change
+  // Recalculate trigger times whenever alarms or sun times change
   useEffect(() => {
-    if (sunTimes) {
-      recalculateAllTriggerTimes(sunTimes);
-    }
-    // Reschedule all enabled alarms (works for both relative and absolute)
+    recalculateAllTriggerTimes(sunTimes);
+
     const enabled = Object.values(useAlarmStore.getState().alarms).filter(
       (a) => a.isEnabled,
     );
     if (enabled.length > 0) {
       scheduleAllAlarms(enabled, sunTimes);
     }
-  }, [sunTimes?.date, sunTimes?.sunrise.getTime(), sunTimes?.sunset.getTime()]);
+  }, [alarms, sunTimes?.date, sunTimes?.sunrise?.getTime(), sunTimes?.sunset?.getTime()]);
 
   const handleToggle = useCallback(
     async (id: string) => {

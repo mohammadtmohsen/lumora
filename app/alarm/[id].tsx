@@ -76,24 +76,13 @@ export default function EditAlarmScreen() {
       absoluteMinute,
     });
 
-    // Compute trigger time and reschedule
-    let nextTriggerAt: string | null = null;
-    if (alarmType === 'absolute') {
-      nextTriggerAt = computeAbsoluteTriggerTime(absoluteHour, absoluteMinute).toISOString();
-    } else if (todaySunTimes) {
-      const eventTime = todaySunTimes[referenceEvent];
-      nextTriggerAt = computeTriggerTime(eventTime, offsetMinutes).toISOString();
-    }
-
+    // Reschedule (trigger time is recalculated on home screen load)
     const updated = useAlarmStore.getState().alarms[id!];
     if (updated && updated.isEnabled) {
       const notificationId = await scheduleAlarm(updated, todaySunTimes);
-      updateAlarm(id!, {
-        nextTriggerAt,
-        ...(notificationId ? { notificationId } : {}),
-      });
-    } else {
-      updateAlarm(id!, { nextTriggerAt });
+      if (notificationId) {
+        updateAlarm(id!, { notificationId });
+      }
     }
 
     router.back();
