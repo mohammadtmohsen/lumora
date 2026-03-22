@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import notifee from '@notifee/react-native';
 import { playAlarmSound, stopAlarmSound } from '../services/soundService';
+import { SunriseIcon } from './Icons';
 import { COLORS } from '../utils/constants';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -132,9 +133,9 @@ function AlarmScreenComponent({ notification }: { notification: any }) {
             animatedStyle,
           ]}
         >
-          <Animated.Text style={[{ fontSize: 80, marginBottom: 32 }, pulseStyle]}>
-            ☀️
-          </Animated.Text>
+          <Animated.View style={[{ marginBottom: 32 }, pulseStyle]}>
+            <SunriseIcon size={80} />
+          </Animated.View>
 
           <Text
             style={{
@@ -161,7 +162,7 @@ function AlarmScreenComponent({ notification }: { notification: any }) {
 
           <View style={{ marginTop: 4, marginBottom: 80, alignItems: 'center' }}>
             <Text style={{ color: COLORS.textMuted, fontSize: 28, marginBottom: 4 }}>
-              ▲
+              {'▲'}
             </Text>
             <Text style={{ color: COLORS.textMuted, fontSize: 15 }}>
               Swipe up to dismiss

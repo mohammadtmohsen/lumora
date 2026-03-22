@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { Alarm } from '../models/types';
 import { formatOffset, formatTime, formatTime24 } from '../utils/timeUtils';
+import { SunriseIcon, SunsetIcon, AlarmIcon } from './Icons';
 import { COLORS } from '../utils/constants';
 
 interface Props {
@@ -24,7 +25,7 @@ const DELETE_THRESHOLD = -80;
 export function AlarmCard({ alarm, onToggle, onPress, onDelete }: Props) {
   const isAbsolute = alarm.type === 'absolute';
   const eventLabel = isAbsolute ? 'Fixed time' : alarm.referenceEvent === 'sunrise' ? 'Sunrise' : 'Sunset';
-  const eventIcon = isAbsolute ? '⏰' : alarm.referenceEvent === 'sunrise' ? '☀️' : '🌅';
+  const EventIconComponent = isAbsolute ? AlarmIcon : alarm.referenceEvent === 'sunrise' ? SunriseIcon : SunsetIcon;
   const eventColor = isAbsolute ? COLORS.accent : alarm.referenceEvent === 'sunrise' ? COLORS.sunrise : COLORS.sunset;
 
   const translateX = useSharedValue(0);
@@ -93,12 +94,9 @@ export function AlarmCard({ alarm, onToggle, onPress, onDelete }: Props) {
             accessibilityHint="Double tap to edit"
           >
             {/* Event icon */}
-            <Text
-              style={{ fontSize: 28, marginRight: 14 }}
-              accessibilityElementsHidden
-            >
-              {eventIcon}
-            </Text>
+            <View style={{ marginRight: 14 }} accessibilityElementsHidden>
+              <EventIconComponent size={28} />
+            </View>
 
             {/* Info */}
             <View style={{ flex: 1 }}>

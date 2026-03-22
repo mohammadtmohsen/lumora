@@ -19,6 +19,7 @@ import { useAlarmStore } from '../src/stores/alarmStore';
 import { playAlarmSound, stopAlarmSound } from '../src/services/soundService';
 import { dismissAlarm, scheduleSnooze } from '../src/services/alarmScheduler';
 import { scheduleNextDayAlarm } from '../src/services/nextDayScheduler';
+import { SunriseIcon, SunsetIcon } from '../src/components/Icons';
 import { COLORS } from '../src/utils/constants';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -188,9 +189,9 @@ export default function AlarmTriggerScreen() {
         />
 
         {/* Icon */}
-        <Animated.Text style={[{ fontSize: 80, marginBottom: 24 }, pulseStyle]}>
-          {isSunrise ? '☀️' : '🌅'}
-        </Animated.Text>
+        <Animated.View style={[{ marginBottom: 24 }, pulseStyle]}>
+          {isSunrise ? <SunriseIcon size={80} /> : <SunsetIcon size={80} />}
+        </Animated.View>
 
         {/* Time */}
         <Text style={[styles.time, { color: COLORS.textPrimary }]}>
@@ -204,9 +205,9 @@ export default function AlarmTriggerScreen() {
 
         {/* Swipe hint */}
         <View style={styles.hintContainer}>
-          <Animated.Text style={[styles.chevron, { color: COLORS.textMuted }, chevronStyle]}>
-            ▲
-          </Animated.Text>
+          <Animated.View style={chevronStyle}>
+            <Text style={[styles.chevron, { color: COLORS.textMuted }]}>▲</Text>
+          </Animated.View>
           <Text style={[styles.hintText, { color: COLORS.textMuted }]}>
             Swipe up to dismiss
           </Text>

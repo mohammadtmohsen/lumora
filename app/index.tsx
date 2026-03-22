@@ -10,6 +10,7 @@ import { SunTimesDisplay } from '../src/components/SunTimesDisplay';
 import { AlarmCard } from '../src/components/AlarmCard';
 import { PermissionBanner } from '../src/components/PermissionBanner';
 import { BatteryOptimizationPrompt } from '../src/components/BatteryOptimizationPrompt';
+import { SettingsIcon, AlarmIcon } from '../src/components/Icons';
 import { COLORS } from '../src/utils/constants';
 import type { Alarm } from '../src/models/types';
 
@@ -83,9 +84,7 @@ export default function HomeScreen() {
             accessibilityLabel="Settings"
             accessibilityRole="button"
           >
-            <Text style={{ color: COLORS.textSecondary, fontSize: 22 }}>
-              ⚙️
-            </Text>
+            <SettingsIcon size={22} />
           </Pressable>
         </View>
       </View>
@@ -99,12 +98,9 @@ export default function HomeScreen() {
         style={{ paddingHorizontal: 32, paddingTop: 40, alignItems: 'center' }}
         accessibilityRole="summary"
       >
-        <Text
-          style={{ fontSize: 56, marginBottom: 16 }}
-          accessibilityElementsHidden
-        >
-          ⏰
-        </Text>
+        <View style={{ marginBottom: 16 }} accessibilityElementsHidden>
+          <AlarmIcon size={56} />
+        </View>
         <Text
           style={{
             color: COLORS.textPrimary,

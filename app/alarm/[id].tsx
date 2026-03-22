@@ -9,6 +9,7 @@ import { TimeOffsetPicker } from '../../src/components/TimeOffsetPicker';
 import { AbsoluteTimePicker } from '../../src/components/AbsoluteTimePicker';
 import { scheduleAlarm, cancelAlarm } from '../../src/services/alarmScheduler';
 import { formatTime, computeTriggerTime, computeAbsoluteTriggerTime } from '../../src/utils/timeUtils';
+import { SunriseIcon } from '../../src/components/Icons';
 import { COLORS } from '../../src/utils/constants';
 import type { AlarmType } from '../../src/models/types';
 
@@ -143,9 +144,12 @@ export default function EditAlarmScreen() {
             alignItems: 'center',
           }}
         >
-          <Text style={{ color: COLORS.textPrimary, fontSize: 15, fontWeight: alarmType === 'relative' ? '700' : '400' }}>
-            ☀️ Sun-relative
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <SunriseIcon size={18} />
+            <Text style={{ color: COLORS.textPrimary, fontSize: 15, fontWeight: alarmType === 'relative' ? '700' : '400' }}>
+              Sun-relative
+            </Text>
+          </View>
         </Pressable>
         <Pressable
           onPress={() => { Haptics.selectionAsync(); setAlarmType('absolute'); }}
@@ -158,7 +162,7 @@ export default function EditAlarmScreen() {
           }}
         >
           <Text style={{ color: COLORS.textPrimary, fontSize: 15, fontWeight: alarmType === 'absolute' ? '700' : '400' }}>
-            ⏰ Fixed time
+            Fixed time
           </Text>
         </Pressable>
       </View>
@@ -183,7 +187,7 @@ export default function EditAlarmScreen() {
                 }}
               >
                 <Text style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: referenceEvent === event ? '700' : '400' }}>
-                  {event === 'sunrise' ? '☀️ Sunrise' : '🌅 Sunset'}
+                  {event === 'sunrise' ? 'Sunrise' : 'Sunset'}
                 </Text>
               </Pressable>
             ))}

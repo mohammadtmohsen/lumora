@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import type { SunTimes } from '../models/types';
 import { formatTime, formatTimeUntil } from '../utils/timeUtils';
+import { SunriseIcon, SunsetIcon, LocationIcon } from './Icons';
 import { COLORS } from '../utils/constants';
 
 interface Props {
@@ -110,9 +111,9 @@ export function SunTimesDisplay({ sunTimes, isValid }: Props) {
         accessibilityRole="summary"
         accessibilityLabel="Location required to show sunrise and sunset times"
       >
-        <Text style={{ color: COLORS.textMuted, fontSize: 40, textAlign: 'center', marginBottom: 12 }}>
-          📍
-        </Text>
+        <View style={{ alignItems: 'center', marginBottom: 12 }}>
+          <LocationIcon size={40} />
+        </View>
         <Text style={{ color: COLORS.textSecondary, fontSize: 16, textAlign: 'center', lineHeight: 22 }}>
           Enable location to see{'\n'}sunrise & sunset times
         </Text>
@@ -157,12 +158,9 @@ export function SunTimesDisplay({ sunTimes, isValid }: Props) {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         {/* Sunrise */}
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text
-            style={{ fontSize: 28, marginBottom: 2 }}
-            accessibilityElementsHidden
-          >
-            ☀️
-          </Text>
+          <View style={{ marginBottom: 4 }} accessibilityElementsHidden>
+            <SunriseIcon size={28} />
+          </View>
           <Text style={{ color: COLORS.textMuted, fontSize: 12, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 }}>
             Sunrise
           </Text>
@@ -186,12 +184,9 @@ export function SunTimesDisplay({ sunTimes, isValid }: Props) {
 
         {/* Sunset */}
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text
-            style={{ fontSize: 28, marginBottom: 2 }}
-            accessibilityElementsHidden
-          >
-            🌅
-          </Text>
+          <View style={{ marginBottom: 4 }} accessibilityElementsHidden>
+            <SunsetIcon size={28} />
+          </View>
           <Text style={{ color: COLORS.textMuted, fontSize: 12, marginBottom: 2, textTransform: 'uppercase', letterSpacing: 1 }}>
             Sunset
           </Text>
