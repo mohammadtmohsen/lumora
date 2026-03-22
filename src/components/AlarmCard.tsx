@@ -87,7 +87,6 @@ export function AlarmCard({ alarm, onToggle, onPress, onDelete }: Props) {
               padding: 16,
               flexDirection: 'row',
               alignItems: 'center',
-              opacity: alarm.isEnabled ? 1 : 0.5,
             })}
             accessibilityRole="button"
             accessibilityLabel={`${alarm.name}, ${isAbsolute ? formatTime24(alarm.absoluteHour, alarm.absoluteMinute) : `${formatOffset(alarm.offsetMinutes)} ${eventLabel}`}, ${alarm.isEnabled ? 'enabled' : 'disabled'}${alarm.nextTriggerAt && alarm.isEnabled ? `, next at ${formatTime(new Date(alarm.nextTriggerAt))}` : ''}`}
