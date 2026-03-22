@@ -1,42 +1,36 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useAlarmStore } from '../../src/stores/alarmStore';
-import { useLocationStore } from '../../src/stores/locationStore';
-import { useSunTimes } from '../../src/hooks/useSunTimes';
-import { TimeOffsetPicker } from '../../src/components/TimeOffsetPicker';
-import { AbsoluteTimePicker } from '../../src/components/AbsoluteTimePicker';
-import { scheduleAlarm, cancelAlarm } from '../../src/services/alarmScheduler';
-import { formatTime, computeTriggerTime, computeAbsoluteTriggerTime } from '../../src/utils/timeUtils';
-import { SunriseIcon } from '../../src/components/Icons';
-import { COLORS } from '../../src/utils/constants';
-import type { AlarmType } from '../../src/models/types';
+import { useRouter } from 'expo-router';
+import { useAlarmStore } from '../../../src/stores/alarmStore';
+import { useLocationStore } from '../../../src/stores/locationStore';
+import { useSunTimes } from '../../../src/hooks/useSunTimes';
+import { TimeOffsetPicker } from '../../../src/components/TimeOffsetPicker';
+import { AbsoluteTimePicker } from '../../../src/components/AbsoluteTimePicker';
+import { scheduleAlarm } from '../../../src/services/alarmScheduler';
+import { formatTime, computeTriggerTime, computeAbsoluteTriggerTime } from '../../../src/utils/timeUtils';
+import { SunriseIcon } from '../../../src/components/Icons';
+import { COLORS } from '../../../src/utils/constants';
+import type { AlarmType } from '../../../src/models/types';
 
-export default function EditAlarmScreen() {
+export default function CreateAlarmScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const alarm = useAlarmStore((s) => s.alarms[id!]);
-  const updateAlarm = useAlarmStore((s) => s.updateAlarm);
-  const deleteAlarm = useAlarmStore((s) => s.deleteAlarm);
+  const addAlarm = useAlarmStore((s) => s.addAlarm);
   const location = useLocationStore((s) => s.location);
   const { todaySunTimes } = useSunTimes(location);
 
-  const initialOffset = Math.abs(alarm?.offsetMinutes ?? 30);
-  const [name, setName] = useState(alarm?.name ?? '');
-  const [alarmType, setAlarmType] = useState<AlarmType>(alarm?.type ?? 'relative');
+  const [name, setName] = useState('');
+  const [alarmType, setAlarmType] = useState<AlarmType>('relative');
 
   // Relative fields
-  const [referenceEvent, setReferenceEvent] = useState<'sunrise' | 'sunset'>(alarm?.referenceEvent ?? 'sunrise');
-  const [direction, setDirection] = useState<'before' | 'after'>(
-    (alarm?.offsetMinutes ?? -30) < 0 ? 'before' : 'after',
-  );
-  const [hours, setHours] = useState(Math.floor(initialOffset / 60));
-  const [minutes, setMinutes] = useState(initialOffset % 60);
+  const [referenceEvent, setReferenceEvent] = useState<'sunrise' | 'sunset'>('sunrise');
+  const [direction, setDirection] = useState<'before' | 'after'>('before');
+  const [hours, setHours] = useState(0);
+  const [minutes, setMinutes] = useState(30);
 
   // Absolute fields
-  const [absoluteHour, setAbsoluteHour] = useState(alarm?.absoluteHour ?? 6);
-  const [absoluteMinute, setAbsoluteMinute] = useState(alarm?.absoluteMinute ?? 0);
+  const [absoluteHour, setAbsoluteHour] = useState(6);
+  const [absoluteMinute, setAbsoluteMinute] = useState(0);
 
   const offsetMinutes = useMemo(() => {
     const total = hours * 60 + minutes;
@@ -52,22 +46,16 @@ export default function EditAlarmScreen() {
     return computeTriggerTime(eventTime, offsetMinutes);
   }, [alarmType, todaySunTimes, referenceEvent, offsetMinutes, absoluteHour, absoluteMinute]);
 
-  if (!alarm) {
-    return (
-      <View style={{ flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: COLORS.textSecondary, fontSize: 16 }}>Alarm not found</Text>
-      </View>
-    );
-  }
-
   const handleSave = async () => {
     if (!name.trim()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert('Name required', 'Please enter a name for your alarm.');
       return;
     }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    updateAlarm(id!, {
+
+    const alarmId = addAlarm({
       name: name.trim(),
       type: alarmType,
       referenceEvent,
@@ -76,35 +64,23 @@ export default function EditAlarmScreen() {
       absoluteMinute,
     });
 
-    // Reschedule (trigger time is recalculated on home screen load)
-    const updated = useAlarmStore.getState().alarms[id!];
-    if (updated && updated.isEnabled) {
-      const notificationId = await scheduleAlarm(updated, todaySunTimes);
+    // Schedule the alarm notification (trigger time is recalculated on home screen load)
+    const alarm = useAlarmStore.getState().alarms[alarmId];
+    if (alarm) {
+      const notificationId = await scheduleAlarm(alarm, todaySunTimes);
       if (notificationId) {
-        updateAlarm(id!, { notificationId });
+        useAlarmStore.getState().updateAlarm(alarmId, { notificationId });
       }
     }
 
     router.back();
   };
 
-  const handleDelete = () => {
-    Alert.alert('Delete Alarm', `Are you sure you want to delete "${alarm.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await cancelAlarm(alarm);
-          deleteAlarm(id!);
-          router.back();
-        },
-      },
-    ]);
-  };
-
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
     <ScrollView
       style={{ flex: 1, backgroundColor: COLORS.background }}
       contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
@@ -170,6 +146,7 @@ export default function EditAlarmScreen() {
       {/* Conditional: Relative alarm fields */}
       {alarmType === 'relative' && (
         <>
+          {/* Reference Event */}
           <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 8, marginLeft: 4 }}>
             RELATIVE TO
           </Text>
@@ -193,6 +170,7 @@ export default function EditAlarmScreen() {
             ))}
           </View>
 
+          {/* Direction */}
           <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 8, marginLeft: 4 }}>
             DIRECTION
           </Text>
@@ -216,6 +194,7 @@ export default function EditAlarmScreen() {
             ))}
           </View>
 
+          {/* Offset */}
           <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 8, marginLeft: 4 }}>
             OFFSET TIME
           </Text>
@@ -277,28 +256,10 @@ export default function EditAlarmScreen() {
           borderRadius: 12,
           paddingVertical: 16,
           alignItems: 'center',
-          marginBottom: 12,
         })}
       >
         <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '700' }}>
-          Save Changes
-        </Text>
-      </Pressable>
-
-      {/* Delete */}
-      <Pressable
-        onPress={handleDelete}
-        style={({ pressed }) => ({
-          backgroundColor: pressed ? '#3a1a1a' : 'transparent',
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: COLORS.danger,
-          paddingVertical: 16,
-          alignItems: 'center',
-        })}
-      >
-        <Text style={{ color: COLORS.danger, fontSize: 16, fontWeight: '600' }}>
-          Delete Alarm
+          Save Alarm
         </Text>
       </Pressable>
     </ScrollView>

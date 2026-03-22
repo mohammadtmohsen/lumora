@@ -1,17 +1,17 @@
 import React, { useCallback } from 'react';
 import { View, Text, FlatList, Pressable, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useLocation } from '../src/hooks/useLocation';
-import { useSunTimes } from '../src/hooks/useSunTimes';
-import { useAlarms } from '../src/hooks/useAlarms';
-import { cancelAlarm } from '../src/services/alarmScheduler';
-import { useAlarmStore } from '../src/stores/alarmStore';
-import { AlarmCard } from '../src/components/AlarmCard';
-import { PermissionBanner } from '../src/components/PermissionBanner';
-import { BatteryOptimizationPrompt } from '../src/components/BatteryOptimizationPrompt';
-import { SettingsIcon, AlarmIcon } from '../src/components/Icons';
-import { COLORS } from '../src/utils/constants';
-import type { Alarm } from '../src/models/types';
+import { useLocation } from '../../src/hooks/useLocation';
+import { useSunTimes } from '../../src/hooks/useSunTimes';
+import { useAlarms } from '../../src/hooks/useAlarms';
+import { cancelAlarm } from '../../src/services/alarmScheduler';
+import { useAlarmStore } from '../../src/stores/alarmStore';
+import { AlarmCard } from '../../src/components/AlarmCard';
+import { PermissionBanner } from '../../src/components/PermissionBanner';
+import { BatteryOptimizationPrompt } from '../../src/components/BatteryOptimizationPrompt';
+import { SettingsIcon, AlarmIcon } from '../../src/components/Icons';
+import { COLORS } from '../../src/utils/constants';
+import type { Alarm } from '../../src/models/types';
 
 export default function HomeScreen() {
   const router = useRouter();
