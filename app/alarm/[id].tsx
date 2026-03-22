@@ -76,13 +76,24 @@ export default function EditAlarmScreen() {
       absoluteMinute,
     });
 
-    // Reschedule the alarm with updated settings
+    // Compute trigger time and reschedule
+    let nextTriggerAt: string | null = null;
+    if (alarmType === 'absolute') {
+      nextTriggerAt = computeAbsoluteTriggerTime(absoluteHour, absoluteMinute).toISOString();
+    } else if (todaySunTimes) {
+      const eventTime = todaySunTimes[referenceEvent];
+      nextTriggerAt = computeTriggerTime(eventTime, offsetMinutes).toISOString();
+    }
+
     const updated = useAlarmStore.getState().alarms[id!];
     if (updated && updated.isEnabled) {
       const notificationId = await scheduleAlarm(updated, todaySunTimes);
-      if (notificationId) {
-        updateAlarm(id!, { notificationId });
-      }
+      updateAlarm(id!, {
+        nextTriggerAt,
+        ...(notificationId ? { notificationId } : {}),
+      });
+    } else {
+      updateAlarm(id!, { nextTriggerAt });
     }
 
     router.back();
