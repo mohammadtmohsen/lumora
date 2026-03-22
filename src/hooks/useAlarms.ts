@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useAlarmStore } from '../stores/alarmStore';
 import {
   scheduleAlarm,
@@ -19,7 +19,16 @@ export function useAlarms(sunTimes: SunTimes | null) {
     getEnabledAlarms,
   } = useAlarmStore();
 
-  // Recalculate trigger times whenever alarms or sun times change
+  // Stable key that changes when alarm IDs, types, offsets, or enabled state change
+  // but NOT when nextTriggerAt or notificationId change (which recalculate sets)
+  const alarmFingerprint = useMemo(() => {
+    return Object.values(alarms)
+      .map((a) => `${a.id}:${a.type}:${a.referenceEvent}:${a.offsetMinutes}:${a.absoluteHour}:${a.absoluteMinute}:${a.isEnabled}`)
+      .sort()
+      .join('|');
+  }, [alarms]);
+
+  // Recalculate trigger times when alarm config or sun times change
   useEffect(() => {
     recalculateAllTriggerTimes(sunTimes);
 
@@ -29,7 +38,7 @@ export function useAlarms(sunTimes: SunTimes | null) {
     if (enabled.length > 0) {
       scheduleAllAlarms(enabled, sunTimes);
     }
-  }, [alarms, sunTimes?.date, sunTimes?.sunrise?.getTime(), sunTimes?.sunset?.getTime()]);
+  }, [alarmFingerprint, sunTimes?.date, sunTimes?.sunrise?.getTime(), sunTimes?.sunset?.getTime()]);
 
   const handleToggle = useCallback(
     async (id: string) => {
