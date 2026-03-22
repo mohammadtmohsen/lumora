@@ -2,7 +2,9 @@ import notifee, { EventType } from '@notifee/react-native';
 import { dismissAlarm, scheduleSnooze } from './src/services/alarmScheduler';
 import { scheduleNextDayAlarm } from './src/services/nextDayScheduler';
 import { updatePersistentNotification } from './src/services/persistentNotificationService';
+import { playAlarmSound, stopAlarmSound } from './src/services/soundService';
 import { useAlarmStore } from './src/stores/alarmStore';
+import { mmkv } from './src/stores/storage';
 
 // Register the standalone alarm screen component for Android full-screen intent.
 // This must be imported before expo-router/entry so the component is registered
@@ -18,16 +20,27 @@ notifee.onBackgroundEvent(async ({ type, detail }) => {
   if (!alarmId) return;
 
   switch (type) {
+    case EventType.DELIVERED:
+      // Alarm just fired in background — store for when app opens
+      console.log(
+        '[BackgroundEvent] DELIVERED — storing pending alarm:',
+        alarmId,
+      );
+      mmkv.set('pending-alarm-id', alarmId);
+      break;
     case EventType.PRESS:
-      // User pressed the notification — app opens to alarm-trigger screen
+      // User tapped notification — store for when app opens
+      console.log('[BackgroundEvent] PRESS — storing pending alarm:', alarmId);
+      mmkv.set('pending-alarm-id', alarmId);
       break;
     case EventType.ACTION_PRESS:
       if (detail.pressAction?.id === 'dismiss') {
+        await stopAlarmSound();
         await dismissAlarm(alarmId);
-        // Schedule next day's occurrence (third leg of triple-redundancy)
         await scheduleNextDayAlarm(alarmId);
         await updatePersistentNotification();
       } else if (detail.pressAction?.id === 'snooze') {
+        await stopAlarmSound();
         const alarm = useAlarmStore.getState().alarms[alarmId];
         if (alarm) {
           await scheduleSnooze(alarm, alarm.snoozeDurationMinutes);
@@ -37,6 +50,7 @@ notifee.onBackgroundEvent(async ({ type, detail }) => {
       }
       break;
     case EventType.DISMISSED:
+      await stopAlarmSound();
       await dismissAlarm(alarmId);
       await scheduleNextDayAlarm(alarmId);
       await updatePersistentNotification();
@@ -44,15 +58,16 @@ notifee.onBackgroundEvent(async ({ type, detail }) => {
   }
 });
 
-// Register foreground service — keeps alarm sound playing when notification
-// is displayed as a foreground service on Android
-notifee.registerForegroundService(() => {
-  // Return a promise that resolves when the service should stop.
-  // The service stays alive until notifee.stopForegroundService() is called
-  // from the alarm dismiss/snooze handler.
+// Register foreground service — plays alarm sound continuously on Android
+// when the alarm notification fires. Runs until stopForegroundService() is called.
+notifee.registerForegroundService((notification) => {
   return new Promise<void>(() => {
-    // Intentionally never resolved — the service runs until explicitly stopped
-    // via notifee.stopForegroundService() when the user dismisses or snoozes.
+    const alarmId = notification?.data?.alarmId as string | undefined;
+    console.log('[ForegroundService] Started — alarmId:', alarmId);
+    if (alarmId) {
+      mmkv.set('pending-alarm-id', alarmId);
+    }
+    playAlarmSound();
   });
 });
 

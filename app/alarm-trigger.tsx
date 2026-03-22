@@ -1,5 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Pressable, Dimensions, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  Dimensions,
+  StyleSheet,
+  Platform,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
@@ -44,9 +51,12 @@ export default function AlarmTriggerScreen() {
   }, []);
 
   // Start alarm sound and keep screen awake
+  // On Android, the foreground service already plays sound — only play on iOS
   useEffect(() => {
     activateKeepAwakeAsync('alarm-trigger');
-    playAlarmSound();
+    if (Platform.OS === 'ios') {
+      playAlarmSound();
+    }
     return () => {
       stopAlarmSound();
       deactivateKeepAwake('alarm-trigger');
@@ -170,7 +180,7 @@ export default function AlarmTriggerScreen() {
     <GestureDetector gesture={panGesture}>
       <Animated.View
         style={[styles.container, containerStyle, bgStyle]}
-        accessibilityRole="alert"
+        accessibilityRole='alert'
         accessibilityLabel={`Alarm: ${alarm?.name ?? 'Alarm'}. Swipe up to dismiss.`}
       >
         {/* Glow behind icon */}
@@ -221,8 +231,8 @@ export default function AlarmTriggerScreen() {
               styles.dismissButton,
               { backgroundColor: pressed ? '#d13550' : COLORS.primary },
             ]}
-            accessibilityLabel="Dismiss alarm"
-            accessibilityRole="button"
+            accessibilityLabel='Dismiss alarm'
+            accessibilityRole='button'
           >
             <Text style={styles.dismissText}>Dismiss</Text>
           </Pressable>
@@ -231,10 +241,12 @@ export default function AlarmTriggerScreen() {
             onPress={handleSnooze}
             style={({ pressed }) => [
               styles.snoozeButton,
-              { backgroundColor: pressed ? COLORS.surfaceLight : COLORS.surface },
+              {
+                backgroundColor: pressed ? COLORS.surfaceLight : COLORS.surface,
+              },
             ]}
             accessibilityLabel={`Snooze for ${alarm?.snoozeDurationMinutes ?? 5} minutes`}
-            accessibilityRole="button"
+            accessibilityRole='button'
           >
             <Text style={styles.snoozeText}>
               Snooze {alarm?.snoozeDurationMinutes ?? 5} min

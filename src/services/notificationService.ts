@@ -4,7 +4,7 @@ import notifee, {
   AuthorizationStatus,
   IOSNotificationSetting,
 } from '@notifee/react-native';
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
 import { ALARM_CHANNEL_ID, STATUS_CHANNEL_ID } from '../utils/constants';
 
 /**
@@ -36,7 +36,8 @@ export async function setupStatusNotificationChannel(): Promise<void> {
   await notifee.createChannel({
     id: STATUS_CHANNEL_ID,
     name: 'Alarm Status',
-    description: 'Always-visible notification showing sunrise time and next alarm',
+    description:
+      'Always-visible notification showing sunrise time and next alarm',
     importance: AndroidImportance.LOW,
     visibility: AndroidVisibility.PUBLIC,
     sound: undefined,
@@ -115,6 +116,36 @@ export async function openPowerManagerSettings(): Promise<void> {
 
 export async function openAlarmPermissionSettings(): Promise<void> {
   await notifee.openAlarmPermissionSettings();
+}
+
+/**
+ * Check if full-screen intent permission is granted (Android 14+).
+ * Required for the alarm to show a full-screen UI over the lock screen.
+ */
+/**
+ * Check if full-screen intent permission is likely needed.
+ * On Android 14+ (API 34), USE_FULL_SCREEN_INTENT must be explicitly granted.
+ */
+export function needsFullScreenIntentPermission(): boolean {
+  if (Platform.OS !== 'android') return false;
+  return Platform.Version >= 34;
+}
+
+/**
+ * Open the system settings page where users can enable full-screen intent permission.
+ * Required on Android 14+ for the alarm to show over the lock screen.
+ */
+export async function openFullScreenIntentSettings(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    await Linking.sendIntent(
+      'android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT',
+      [{ key: 'package', value: 'com.lumora.app' }],
+    );
+  } catch {
+    // Fallback to app notification settings if the intent isn't available
+    await notifee.openNotificationSettings();
+  }
 }
 
 /**

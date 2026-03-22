@@ -1,18 +1,24 @@
 import React, { useEffect } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import notifee, { EventType } from '@notifee/react-native';
 import { useLocation } from '../src/hooks/useLocation';
 import { useAlarmStore } from '../src/stores/alarmStore';
+import { mmkv } from '../src/stores/storage';
+import { Alert } from 'react-native';
 import {
   setupNotificationChannel,
   setupStatusNotificationChannel,
   requestNotificationPermission,
   setupIOSCategories,
+  needsFullScreenIntentPermission,
+  openFullScreenIntentSettings,
 } from '../src/services/notificationService';
 import { updatePersistentNotification } from '../src/services/persistentNotificationService';
 import { dismissAlarm, scheduleSnooze } from '../src/services/alarmScheduler';
+import { stopAlarmSound } from '../src/services/soundService';
 import { scheduleNextDayAlarm } from '../src/services/nextDayScheduler';
 import { useAppStateRecalculation } from '../src/hooks/useAppStateRecalculation';
 import { registerBackgroundRecalculation } from '../src/tasks/backgroundRecalculate';
@@ -41,6 +47,21 @@ export default function RootLayout() {
       await registerBackgroundRecalculation();
       useSettingsStore.getState().setOnboardingComplete();
       await updatePersistentNotification();
+
+      // Prompt for full-screen intent permission on Android 14+
+      if (needsFullScreenIntentPermission()) {
+        Alert.alert(
+          'Full-Screen Alarm Permission',
+          'Lumora needs permission to show alarms over the lock screen. Please enable "Allow full-screen notifications" on the next screen.',
+          [
+            { text: 'Later', style: 'cancel' },
+            {
+              text: 'Open Settings',
+              onPress: () => openFullScreenIntentSettings(),
+            },
+          ],
+        );
+      }
     }
     init();
   }, []);
@@ -50,19 +71,35 @@ export default function RootLayout() {
       const alarmId = detail.notification?.data?.alarmId as string | undefined;
       const isAlarm = detail.notification?.data?.type === 'alarm-trigger';
 
+      console.log(
+        '[ForegroundEvent] type:',
+        type,
+        'alarmId:',
+        alarmId,
+        'isAlarm:',
+        isAlarm,
+      );
+
       switch (type) {
         case EventType.DELIVERED:
           if (isAlarm && alarmId) {
+            console.log(
+              '[ForegroundEvent] DELIVERED — navigating to alarm-trigger',
+            );
             router.push({ pathname: '/alarm-trigger', params: { alarmId } });
           }
           break;
         case EventType.PRESS:
-          if (alarmId) {
+          if (isAlarm && alarmId) {
+            console.log(
+              '[ForegroundEvent] PRESS — navigating to alarm-trigger',
+            );
             router.push({ pathname: '/alarm-trigger', params: { alarmId } });
           }
           break;
         case EventType.ACTION_PRESS:
           if (detail.pressAction?.id === 'snooze' && alarmId) {
+            stopAlarmSound();
             const alarm = useAlarmStore.getState().alarms[alarmId];
             if (alarm) {
               scheduleSnooze(alarm, alarm.snoozeDurationMinutes);
@@ -70,6 +107,7 @@ export default function RootLayout() {
             dismissAlarm(alarmId);
             updatePersistentNotification();
           } else if (detail.pressAction?.id === 'dismiss' && alarmId) {
+            stopAlarmSound();
             dismissAlarm(alarmId);
             scheduleNextDayAlarm(alarmId);
             updatePersistentNotification();
@@ -81,22 +119,69 @@ export default function RootLayout() {
     return unsubscribe;
   }, [router]);
 
+  // Check for pending alarm — handles all cases: cold start, warm start, and
+  // alarm firing while app is open (foreground service stores ID in MMKV)
   useEffect(() => {
+    function checkPendingAlarm() {
+      const pendingAlarmId = mmkv.getString('pending-alarm-id');
+      if (pendingAlarmId) {
+        console.log('[PendingAlarm] Found pending alarm:', pendingAlarmId);
+        mmkv.delete('pending-alarm-id');
+        router.push({
+          pathname: '/alarm-trigger',
+          params: { alarmId: pendingAlarmId },
+        });
+        return true;
+      }
+      return false;
+    }
+
+    // Check on mount (cold start)
     async function checkInitialNotification() {
+      if (checkPendingAlarm()) return;
+
       const initial = await notifee.getInitialNotification();
       if (initial) {
-        const alarmId = initial.notification?.data?.alarmId as string | undefined;
-        if (alarmId) {
+        const alarmId = initial.notification?.data?.alarmId as
+          | string
+          | undefined;
+        const isAlarm = initial.notification?.data?.type === 'alarm-trigger';
+        if (alarmId && isAlarm) {
           router.push({ pathname: '/alarm-trigger', params: { alarmId } });
         }
       }
     }
-    checkInitialNotification();
-  }, []);
+
+    setTimeout(() => checkInitialNotification(), 300);
+
+    // Check when app comes back to foreground
+    const appStateSub = AppState.addEventListener(
+      'change',
+      (state: AppStateStatus) => {
+        if (state === 'active') {
+          // Small delay to let MMKV write settle
+          setTimeout(() => checkPendingAlarm(), 200);
+        }
+      },
+    );
+
+    // Poll MMKV every second — catches the case where foreground service
+    // stores alarm ID while the app is already open
+    const pollInterval = setInterval(() => {
+      checkPendingAlarm();
+    }, 1000);
+
+    return () => {
+      appStateSub.remove();
+      clearInterval(pollInterval);
+    };
+  }, [router]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <StatusBar style="light" />
+    <GestureHandlerRootView
+      style={{ flex: 1, backgroundColor: COLORS.background }}
+    >
+      <StatusBar style='light' />
       <Stack
         screenOptions={{
           contentStyle: { backgroundColor: COLORS.background },
@@ -105,19 +190,23 @@ export default function RootLayout() {
             const title = options.title ?? '';
             const canGoBack = navigation.canGoBack();
             return (
-              <AppHeader title={title} canGoBack={canGoBack} onBack={() => navigation.goBack()} />
+              <AppHeader
+                title={title}
+                canGoBack={canGoBack}
+                onBack={() => navigation.goBack()}
+              />
             );
           },
         }}
       >
         <Stack.Screen
-          name="(main)"
+          name='(main)'
           options={{
             headerShown: false,
           }}
         />
         <Stack.Screen
-          name="alarm-trigger"
+          name='alarm-trigger'
           options={{
             headerShown: false,
             presentation: 'fullScreenModal',
@@ -125,7 +214,7 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="settings"
+          name='settings'
           options={{
             title: 'Settings',
           }}

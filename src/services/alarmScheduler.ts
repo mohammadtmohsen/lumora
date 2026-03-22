@@ -4,6 +4,7 @@ import notifee, {
   AndroidImportance,
   AndroidVisibility,
   AndroidStyle,
+  AndroidLaunchActivityFlag,
   AlarmType,
 } from '@notifee/react-native';
 import { Platform, Alert, Linking } from 'react-native';
@@ -54,7 +55,10 @@ async function ensureExactAlarmPermission(): Promise<boolean> {
  * - Relative: sunEventTime + offsetMinutes
  * - Absolute: next occurrence of absoluteHour:absoluteMinute
  */
-function getAlarmTriggerTime(alarm: Alarm, sunTimes: SunTimes | null): Date | null {
+function getAlarmTriggerTime(
+  alarm: Alarm,
+  sunTimes: SunTimes | null,
+): Date | null {
   if (alarm.type === 'absolute') {
     return computeAbsoluteTriggerTime(alarm.absoluteHour, alarm.absoluteMinute);
   }
@@ -122,14 +126,15 @@ export async function scheduleAlarm(
         importance: AndroidImportance.HIGH,
         visibility: AndroidVisibility.PUBLIC,
         sound: 'default',
-        vibrationPattern: [0, 500, 200, 500, 200, 500],
+        vibrationPattern: [500, 200, 500, 200],
         lightUpScreen: true,
         autoCancel: false,
         ongoing: true,
         asForegroundService: true,
         fullScreenAction: {
           id: 'default',
-          mainComponent: 'alarm-screen',
+          launchActivity: 'default',
+          launchActivityFlags: [AndroidLaunchActivityFlag.NEW_TASK],
         },
         pressAction: {
           id: 'default',
@@ -249,14 +254,15 @@ export async function scheduleSnooze(
         importance: AndroidImportance.HIGH,
         visibility: AndroidVisibility.PUBLIC,
         sound: 'default',
-        vibrationPattern: [0, 500, 200, 500, 200, 500],
+        vibrationPattern: [500, 200, 500, 200],
         lightUpScreen: true,
         autoCancel: false,
         ongoing: true,
         asForegroundService: true,
         fullScreenAction: {
           id: 'default',
-          mainComponent: 'alarm-screen',
+          launchActivity: 'default',
+          launchActivityFlags: [AndroidLaunchActivityFlag.NEW_TASK],
         },
         pressAction: {
           id: 'default',

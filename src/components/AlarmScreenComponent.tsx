@@ -1,6 +1,17 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, Pressable, Dimensions, AppRegistry } from 'react-native';
-import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
+import {
+  View,
+  Text,
+  Pressable,
+  Dimensions,
+  AppRegistry,
+  Platform,
+} from 'react-native';
+import {
+  GestureHandlerRootView,
+  GestureDetector,
+  Gesture,
+} from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -37,9 +48,11 @@ function AlarmScreenComponent({ notification }: { notification: any }) {
     return () => clearInterval(interval);
   }, []);
 
-  // Start alarm sound
+  // On Android, the foreground service already plays sound — only play on iOS
   useEffect(() => {
-    playAlarmSound();
+    if (Platform.OS === 'ios') {
+      playAlarmSound();
+    }
     return () => {
       stopAlarmSound();
     };
@@ -160,8 +173,12 @@ function AlarmScreenComponent({ notification }: { notification: any }) {
             {alarmName}
           </Text>
 
-          <View style={{ marginTop: 4, marginBottom: 80, alignItems: 'center' }}>
-            <Text style={{ color: COLORS.textMuted, fontSize: 28, marginBottom: 4 }}>
+          <View
+            style={{ marginTop: 4, marginBottom: 80, alignItems: 'center' }}
+          >
+            <Text
+              style={{ color: COLORS.textMuted, fontSize: 28, marginBottom: 4 }}
+            >
               {'▲'}
             </Text>
             <Text style={{ color: COLORS.textMuted, fontSize: 15 }}>
@@ -179,7 +196,9 @@ function AlarmScreenComponent({ notification }: { notification: any }) {
                 alignItems: 'center',
               })}
             >
-              <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '700' }}>
+              <Text
+                style={{ color: '#ffffff', fontSize: 18, fontWeight: '700' }}
+              >
                 Dismiss
               </Text>
             </Pressable>
@@ -193,7 +212,13 @@ function AlarmScreenComponent({ notification }: { notification: any }) {
                 alignItems: 'center',
               })}
             >
-              <Text style={{ color: COLORS.textSecondary, fontSize: 16, fontWeight: '600' }}>
+              <Text
+                style={{
+                  color: COLORS.textSecondary,
+                  fontSize: 16,
+                  fontWeight: '600',
+                }}
+              >
                 Snooze 5 min
               </Text>
             </Pressable>
