@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import notifee, { EventType } from '@notifee/react-native';
 import { useLocation } from '../src/hooks/useLocation';
 import { useAlarmStore } from '../src/stores/alarmStore';
@@ -95,7 +96,7 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -140,6 +141,6 @@ export default function RootLayout() {
           }}
         />
       </Stack>
-    </>
+    </GestureHandlerRootView>
   );
 }
