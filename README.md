@@ -1,4 +1,4 @@
-# Sunrise 🌅
+# Lumora 🌅
 
 A React Native Expo app that calculates daily sunrise and sunset times based on your location and lets you set alarms relative to them — or at fixed times. Designed to simulate the native alarm experience on Android (full-screen intent over lock screen) with the best possible equivalent on iOS (Critical Alerts).
 
@@ -52,31 +52,37 @@ A React Native Expo app that calculates daily sunrise and sunset times based on 
 | State Management | Zustand + react-native-mmkv | MMKV is synchronous (critical for background tasks and boot receivers), 30x faster than AsyncStorage |
 | UI Styling | Inline styles (StyleSheet) | Direct React Native styling, dark theme color system |
 | Animations | react-native-reanimated + react-native-gesture-handler | Swipe-to-dismiss gesture, daylight bar animation, alarm trigger effects |
-| Sound | expo-av | Alarm sound playback with silent mode bypass on iOS |
+| Sound | expo-audio | Alarm sound playback with silent mode bypass on iOS |
 | Date Math | dayjs | Lightweight offset calculations |
 
 ## Project Structure
 
 ```
-sunrise/
-├── app/                              # Expo Router screens
+lumora/
+├── app/
 │   ├── _layout.tsx                   # Root layout, notification handlers, init
-│   ├── index.tsx                     # Home: sun times + alarm list
-│   ├── alarm/create.tsx              # Create alarm (relative or absolute)
-│   ├── alarm/[id].tsx                # Edit/delete alarm
+│   ├── (main)/
+│   │   ├── _layout.tsx               # Sun times header + inner Stack
+│   │   ├── index.tsx                 # Home: sun times + alarm list
+│   │   └── alarm/
+│   │       ├── create.tsx            # Create alarm (relative or absolute)
+│   │       └── [id].tsx              # Edit/delete alarm
 │   ├── alarm-trigger.tsx             # Full-screen alarm dismiss screen
 │   └── settings.tsx                  # Location, permissions, defaults
 │
 ├── plugins/
 │   ├── withAlarmPermissions.js       # Android: USE_FULL_SCREEN_INTENT, foreground service, boot receiver
-│   └── withIOSAlarmPermissions.js    # iOS: Critical Alerts entitlement, background modes
+│   ├── withIOSAlarmPermissions.js    # iOS: Critical Alerts entitlement, background modes
+│   └── withMMKVFix.js               # Fix MMKV linker on Xcode 26
 │
 ├── src/
 │   ├── components/
 │   │   ├── AbsoluteTimePicker.tsx    # 12-hour time roller with AM/PM toggle
 │   │   ├── AlarmCard.tsx             # Alarm list item with swipe-to-delete
 │   │   ├── AlarmScreenComponent.tsx  # Standalone RN root for Android full-screen intent
+│   │   ├── AppHeader.tsx             # Shared header component
 │   │   ├── BatteryOptimizationPrompt.tsx
+│   │   ├── Icons.tsx                 # View-based icons (sun, alarm, settings)
 │   │   ├── PermissionBanner.tsx
 │   │   ├── SunTimesDisplay.tsx       # Sunrise/sunset card with daylight progress bar
 │   │   └── TimeOffsetPicker.tsx      # Hours:Minutes stepper for relative offsets
@@ -97,7 +103,7 @@ sunrise/
 │   │   ├── alarmScheduler.ts        # Core: schedule/cancel via Notifee, handles both alarm types
 │   │   ├── nextDayScheduler.ts      # Schedule next occurrence on dismiss
 │   │   ├── notificationService.ts   # Channels, permissions, iOS categories
-│   │   ├── soundService.ts          # expo-av playback with silent mode bypass
+│   │   ├── soundService.ts          # expo-audio playback with silent mode bypass
 │   │   └── sunCalcService.ts        # suncalc wrapper
 │   │
 │   ├── tasks/
@@ -111,6 +117,7 @@ sunrise/
 ├── assets/sounds/                    # Alarm sounds (.wav, .caf, .mp3)
 ├── index.ts                          # Entry: registers Notifee handlers + AlarmScreen before app
 ├── app.json                          # Expo config with plugins
+├── eas.json                          # EAS Build configuration
 └── package.json
 ```
 
@@ -128,8 +135,8 @@ sunrise/
 
 ```bash
 # Clone the repository
-git clone https://github.com/mohammadtmohsen/sunrise.git
-cd sunrise
+git clone https://github.com/mohammadtmohsen/lumora.git
+cd lumora
 
 # Install dependencies
 npm install

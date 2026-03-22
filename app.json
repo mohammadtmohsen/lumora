@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "Sunrise",
-    "slug": "sunrise",
+    "name": "Lumora",
+    "slug": "lumora",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "scheme": "sunrise",
+    "scheme": "lumora",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.sunrise.app",
+      "bundleIdentifier": "com.lumora.app",
       "infoPlist": {
         "UIBackgroundModes": ["audio", "fetch", "remote-notification"]
       }
@@ -26,7 +26,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.sunrise.app",
+      "package": "com.lumora.app",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
@@ -40,7 +40,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Sunrise needs your location to calculate accurate sunrise and sunset times for your area."
+          "locationWhenInUsePermission": "Lumora needs your location to calculate accurate sunrise and sunset times for your area."
         }
       ],
       "./plugins/withAlarmPermissions",

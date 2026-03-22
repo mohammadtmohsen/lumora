@@ -33,7 +33,7 @@ export default function MainLayout() {
         },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Sunrise' }} />
+      <Stack.Screen name="index" options={{ title: 'Lumora' }} />
       <Stack.Screen name="alarm/create" options={{ title: 'New Alarm' }} />
       <Stack.Screen name="alarm/[id]" options={{ title: 'Edit Alarm' }} />
     </Stack>
