@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
+import { View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import notifee, { EventType } from '@notifee/react-native';
 import { useLocation } from '../src/hooks/useLocation';
+import { useSunTimes } from '../src/hooks/useSunTimes';
 import { useAlarmStore } from '../src/stores/alarmStore';
 import {
   setupNotificationChannel,
@@ -15,37 +17,33 @@ import { scheduleNextDayAlarm } from '../src/services/nextDayScheduler';
 import { useAppStateRecalculation } from '../src/hooks/useAppStateRecalculation';
 import { registerBackgroundRecalculation } from '../src/tasks/backgroundRecalculate';
 import { useSettingsStore } from '../src/stores/settingsStore';
+import { SunTimesDisplay } from '../src/components/SunTimesDisplay';
 import { COLORS } from '../src/utils/constants';
 
 export default function RootLayout() {
   const router = useRouter();
   const { location, fetchLocation } = useLocation();
+  const { todaySunTimes, isValid } = useSunTimes(location);
 
-  // Second leg of triple-redundancy: recalculate on app foreground resume
   useAppStateRecalculation();
 
-  // Fetch location on app start if not cached
   useEffect(() => {
     if (!location) {
       fetchLocation();
     }
   }, []);
 
-  // Set up notification infrastructure + register background task
   useEffect(() => {
     async function init() {
       await requestNotificationPermission();
       await setupNotificationChannel();
       await setupIOSCategories();
-      // First leg of triple-redundancy: background fetch every ~6 hours
       await registerBackgroundRecalculation();
-      // Mark onboarding complete after first init
       useSettingsStore.getState().setOnboardingComplete();
     }
     init();
   }, []);
 
-  // Handle foreground notification events
   useEffect(() => {
     const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
       const alarmId = detail.notification?.data?.alarmId as string | undefined;
@@ -53,7 +51,6 @@ export default function RootLayout() {
 
       switch (type) {
         case EventType.DELIVERED:
-          // Alarm fired while app is in foreground — navigate to trigger screen
           if (isAlarm && alarmId) {
             router.push({ pathname: '/alarm-trigger', params: { alarmId } });
           }
@@ -81,7 +78,6 @@ export default function RootLayout() {
     return unsubscribe;
   }, [router]);
 
-  // Check if app was opened from a notification
   useEffect(() => {
     async function checkInitialNotification() {
       const initial = await notifee.getInitialNotification();
@@ -96,8 +92,15 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: COLORS.background }}>
       <StatusBar style="light" />
+
+      {/* Persistent sun times header */}
+      <View style={{ paddingTop: 60, paddingBottom: 12, backgroundColor: COLORS.background }}>
+        <SunTimesDisplay sunTimes={todaySunTimes} isValid={isValid} />
+      </View>
+
+      {/* Page content below */}
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: COLORS.background },
@@ -110,14 +113,13 @@ export default function RootLayout() {
         <Stack.Screen
           name="index"
           options={{
-            title: 'Sunrise',
+            title: 'Alarms',
           }}
         />
         <Stack.Screen
           name="alarm/create"
           options={{
             title: 'New Alarm',
-            presentation: 'modal',
           }}
         />
         <Stack.Screen

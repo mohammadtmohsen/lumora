@@ -6,7 +6,6 @@ import { useSunTimes } from '../src/hooks/useSunTimes';
 import { useAlarms } from '../src/hooks/useAlarms';
 import { cancelAlarm } from '../src/services/alarmScheduler';
 import { useAlarmStore } from '../src/stores/alarmStore';
-import { SunTimesDisplay } from '../src/components/SunTimesDisplay';
 import { AlarmCard } from '../src/components/AlarmCard';
 import { PermissionBanner } from '../src/components/PermissionBanner';
 import { BatteryOptimizationPrompt } from '../src/components/BatteryOptimizationPrompt';
@@ -17,7 +16,7 @@ import type { Alarm } from '../src/models/types';
 export default function HomeScreen() {
   const router = useRouter();
   const { location, isLoading: locationLoading, fetchLocation } = useLocation();
-  const { todaySunTimes, isValid } = useSunTimes(location);
+  const { todaySunTimes } = useSunTimes(location);
   const { alarms, toggleAlarm } = useAlarms(todaySunTimes);
 
   const onRefresh = useCallback(() => {
@@ -56,10 +55,9 @@ export default function HomeScreen() {
 
   const renderHeader = useCallback(
     () => (
-      <View style={{ paddingTop: 12, paddingBottom: 8 }}>
+      <View style={{ paddingTop: 8, paddingBottom: 8 }}>
         <PermissionBanner />
         <BatteryOptimizationPrompt />
-        <SunTimesDisplay sunTimes={todaySunTimes} isValid={isValid} />
 
         {/* Section header */}
         <View
@@ -68,19 +66,12 @@ export default function HomeScreen() {
             justifyContent: 'space-between',
             alignItems: 'center',
             paddingHorizontal: 16,
-            marginTop: 24,
             marginBottom: 12,
           }}
         >
-          <Text
-            style={{ color: COLORS.textPrimary, fontSize: 20, fontWeight: '600' }}
-            accessibilityRole="header"
-          >
-            Alarms
-          </Text>
           <Pressable
             onPress={() => router.push('/settings')}
-            style={{ padding: 8, marginRight: -8 }}
+            style={{ padding: 8, marginLeft: -8 }}
             accessibilityLabel="Settings"
             accessibilityRole="button"
           >
@@ -89,7 +80,7 @@ export default function HomeScreen() {
         </View>
       </View>
     ),
-    [todaySunTimes, isValid, router],
+    [router],
   );
 
   const renderEmpty = useCallback(
