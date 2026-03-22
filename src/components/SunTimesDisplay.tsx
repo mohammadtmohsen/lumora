@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,7 +14,6 @@ import { COLORS } from '../utils/constants';
 interface Props {
   sunTimes: SunTimes | null;
   isValid: boolean;
-  onRefresh?: () => void;
   isRefreshing?: boolean;
 }
 
@@ -100,11 +99,10 @@ function DaylightBar({ sunrise, sunset }: { sunrise: Date; sunset: Date }) {
   );
 }
 
-export function SunTimesDisplay({ sunTimes, isValid, onRefresh, isRefreshing }: Props) {
+export function SunTimesDisplay({ sunTimes, isValid, isRefreshing }: Props) {
   if (!sunTimes) {
     return (
-      <Pressable
-        onPress={onRefresh}
+      <View
         style={{
           backgroundColor: COLORS.surface,
           borderRadius: 16,
@@ -118,9 +116,9 @@ export function SunTimesDisplay({ sunTimes, isValid, onRefresh, isRefreshing }: 
           <LocationIcon size={40} />
         </View>
         <Text style={{ color: COLORS.textSecondary, fontSize: 16, textAlign: 'center', lineHeight: 22 }}>
-          Tap to enable location{'\n'}for sunrise & sunset times
+          Pull down to enable location{'\n'}for sunrise & sunset times
         </Text>
-      </Pressable>
+      </View>
     );
   }
 
@@ -147,8 +145,7 @@ export function SunTimesDisplay({ sunTimes, isValid, onRefresh, isRefreshing }: 
 
 
   return (
-    <Pressable
-      onPress={onRefresh}
+    <View
       style={{
         backgroundColor: COLORS.surface,
         borderRadius: 16,
@@ -156,7 +153,7 @@ export function SunTimesDisplay({ sunTimes, isValid, onRefresh, isRefreshing }: 
         marginHorizontal: 16,
       }}
       accessibilityRole="summary"
-      accessibilityLabel={`Sunrise at ${formatTime(sunTimes.sunrise)}, sunset at ${formatTime(sunTimes.sunset)}. Tap to refresh.`}
+      accessibilityLabel={`Sunrise at ${formatTime(sunTimes.sunrise)}, sunset at ${formatTime(sunTimes.sunset)}`}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
         {/* Sunrise */}
@@ -218,6 +215,6 @@ export function SunTimesDisplay({ sunTimes, isValid, onRefresh, isRefreshing }: 
           Updating location...
         </Text>
       )}
-    </Pressable>
+    </View>
   );
 }

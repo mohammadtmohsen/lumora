@@ -97,7 +97,7 @@ export default function RootLayout() {
 
       {/* Persistent sun times header */}
       <View style={{ paddingTop: 60, paddingBottom: 12, backgroundColor: COLORS.background }}>
-        <SunTimesDisplay sunTimes={todaySunTimes} isValid={isValid} onRefresh={fetchLocation} isRefreshing={locationLoading} />
+        <SunTimesDisplay sunTimes={todaySunTimes} isValid={isValid} isRefreshing={locationLoading} />
       </View>
 
       {/* Page content below */}

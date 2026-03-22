@@ -128,8 +128,8 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={locationLoading}
             onRefresh={fetchLocation}
-            tintColor={COLORS.primary}
-            progressViewOffset={0}
+            tintColor={'transparent'}
+            colors={['transparent']}
           />
         }
       />
