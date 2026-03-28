@@ -1,11 +1,12 @@
-import React, { useCallback } from 'react';
-import { View, Text, Switch, Pressable, Alert } from 'react-native';
+import React, { useCallback, useEffect } from 'react';
+import { View, Text, Pressable, Alert } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
+  interpolateColor,
   runOnJS,
 } from 'react-native-reanimated';
 import type { Alarm } from '../models/types';
@@ -21,6 +22,80 @@ interface Props {
 }
 
 const DELETE_THRESHOLD = -80;
+const TRACK_W = 48;
+const TRACK_H = 28;
+const THUMB_SIZE = 22;
+const THUMB_TRAVEL = TRACK_W - THUMB_SIZE - 6;
+
+function AnimatedToggle({
+  value,
+  onValueChange,
+  activeColor,
+  accessibilityLabel,
+}: {
+  value: boolean;
+  onValueChange: () => void;
+  activeColor: string;
+  accessibilityLabel?: string;
+}) {
+  const progress = useSharedValue(value ? 1 : 0);
+
+  useEffect(() => {
+    progress.value = withSpring(value ? 1 : 0, { damping: 15, stiffness: 180 });
+  }, [value]);
+
+  const trackStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [COLORS.border, activeColor],
+    ),
+  }));
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: progress.value * THUMB_TRAVEL }],
+  }));
+
+  return (
+    <Pressable
+      onPress={onValueChange}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={accessibilityLabel}
+      hitSlop={8}
+    >
+      <Animated.View
+        style={[
+          {
+            width: TRACK_W,
+            height: TRACK_H,
+            borderRadius: TRACK_H / 2,
+            justifyContent: 'center',
+            paddingHorizontal: 3,
+          },
+          trackStyle,
+        ]}
+      >
+        <Animated.View
+          style={[
+            {
+              width: THUMB_SIZE,
+              height: THUMB_SIZE,
+              borderRadius: THUMB_SIZE / 2,
+              backgroundColor: '#ffffff',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.2,
+              shadowRadius: 2,
+              elevation: 3,
+            },
+            thumbStyle,
+          ]}
+        />
+      </Animated.View>
+    </Pressable>
+  );
+}
 
 export function AlarmCard({ alarm, onToggle, onPress, onDelete }: Props) {
   const isAbsolute = alarm.type === 'absolute';
@@ -141,14 +216,14 @@ export function AlarmCard({ alarm, onToggle, onPress, onDelete }: Props) {
             </View>
 
             {/* Column 3: Toggle */}
-            <Switch
-              style={{ marginLeft: 12 }}
-              value={alarm.isEnabled}
-              onValueChange={() => onToggle(alarm.id)}
-              trackColor={{ false: COLORS.border, true: eventColor }}
-              thumbColor="#ffffff"
-              accessibilityLabel={`Toggle ${alarm.name} ${alarm.isEnabled ? 'off' : 'on'}`}
-            />
+            <View style={{ marginLeft: 12 }}>
+              <AnimatedToggle
+                value={alarm.isEnabled}
+                onValueChange={() => onToggle(alarm.id)}
+                activeColor={eventColor}
+                accessibilityLabel={`Toggle ${alarm.name} ${alarm.isEnabled ? 'off' : 'on'}`}
+              />
+            </View>
           </Pressable>
         </Animated.View>
       </GestureDetector>
