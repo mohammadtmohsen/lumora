@@ -183,7 +183,7 @@ export function AlarmCard({ alarm, onToggle, onPress, onDelete }: Props) {
               ) : (
                 <Text style={{ color: COLORS.textMuted, fontSize: 14, marginBottom: 6 }}>--:--</Text>
               )}
-              <View accessibilityElementsHidden>
+              <View accessibilityElementsHidden style={{ opacity: alarm.isEnabled ? 1 : 0.3 }}>
                 <EventIconComponent size={22} />
               </View>
             </View>
