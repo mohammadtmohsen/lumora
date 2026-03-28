@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Linking,
 } from 'react-native';
 import { AnimatedToggle } from '../src/components/AlarmCard';
+import { pickAudioFile, deleteCustomSound } from '../src/services/audioPickerService';
+import { playPreviewSound, stopPreviewSound } from '../src/services/soundService';
 import { useLocation } from '../src/hooks/useLocation';
 import { useSettingsStore } from '../src/stores/settingsStore';
 import {
@@ -77,8 +79,13 @@ export default function SettingsScreen() {
     setDefaultSnoozeDuration,
     showPersistentNotification,
     setShowPersistentNotification,
+    customSoundUri,
+    customSoundName,
+    setCustomSound,
+    clearCustomSound,
   } = useSettingsStore();
 
+  const [isPreviewing, setIsPreviewing] = useState(false);
   const [notifPermission, setNotifPermission] = useState<boolean | null>(null);
   const [criticalAlerts, setCriticalAlerts] = useState<boolean | null>(null);
   const [batteryInfo, setBatteryInfo] = useState<{
@@ -114,6 +121,47 @@ export default function SettingsScreen() {
       );
     }
   };
+
+  const handlePickSound = useCallback(async () => {
+    try {
+      const result = await pickAudioFile();
+      if (result) {
+        if (customSoundUri) {
+          await deleteCustomSound(customSoundUri);
+        }
+        setCustomSound(result.uri, result.name);
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to select audio file. Please try again.');
+    }
+  }, [customSoundUri, setCustomSound]);
+
+  const handlePreview = useCallback(async () => {
+    if (isPreviewing) {
+      await stopPreviewSound();
+      setIsPreviewing(false);
+    } else {
+      setIsPreviewing(true);
+      await playPreviewSound(customSoundUri);
+      setTimeout(async () => {
+        await stopPreviewSound();
+        setIsPreviewing(false);
+      }, 10000);
+    }
+  }, [isPreviewing, customSoundUri]);
+
+  const handleResetSound = useCallback(async () => {
+    if (customSoundUri) {
+      await deleteCustomSound(customSoundUri);
+    }
+    clearCustomSound();
+    await stopPreviewSound();
+    setIsPreviewing(false);
+  }, [customSoundUri, clearCustomSound]);
+
+  useEffect(() => {
+    return () => { stopPreviewSound(); };
+  }, []);
 
   const handleSnoozeDuration = () => {
     const options = [5, 10, 15, 20, 30];
@@ -291,6 +339,56 @@ export default function SettingsScreen() {
           value={`${defaultSnoozeDuration} min`}
           onPress={handleSnoozeDuration}
         />
+        {/* Alarm Sound */}
+        <Pressable
+          onPress={handlePickSound}
+          style={{
+            backgroundColor: COLORS.surface,
+            padding: 16,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderBottomWidth: 1,
+            borderBottomColor: COLORS.border,
+          }}
+        >
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={{ color: COLORS.textPrimary, fontSize: 16 }}>
+              Alarm Sound
+            </Text>
+            <Text style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 2 }} numberOfLines={1}>
+              {customSoundName ?? 'Default'}
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); handlePreview(); }}
+              hitSlop={8}
+              style={{
+                paddingVertical: 4,
+                paddingHorizontal: 10,
+                borderRadius: 8,
+                backgroundColor: isPreviewing ? COLORS.accent : 'rgba(255,255,255,0.06)',
+              }}
+            >
+              <Text style={{ color: isPreviewing ? '#000000' : COLORS.accent, fontSize: 13, fontWeight: '600' }}>
+                {isPreviewing ? 'Stop' : 'Play'}
+              </Text>
+            </Pressable>
+            {customSoundUri && (
+              <Pressable
+                onPress={(e) => { e.stopPropagation(); handleResetSound(); }}
+                hitSlop={8}
+              >
+                <Text style={{ color: COLORS.danger, fontSize: 13, fontWeight: '600' }}>
+                  Reset
+                </Text>
+              </Pressable>
+            )}
+          </View>
+        </Pressable>
+
+        {/* Vibration */}
         <View
           style={{
             backgroundColor: COLORS.surface,

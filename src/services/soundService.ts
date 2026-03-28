@@ -4,19 +4,18 @@ import {
   type AudioPlayer,
 } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
+import { useSettingsStore } from '../stores/settingsStore';
 
 let currentPlayer: AudioPlayer | null = null;
 let vibrationInterval: ReturnType<typeof setInterval> | null = null;
+let previewPlayer: AudioPlayer | null = null;
 
 export async function playAlarmSound(): Promise<void> {
-  // Stop any existing player first to prevent orphaned audio instances
   if (currentPlayer) {
     try {
       currentPlayer.pause();
       currentPlayer.release();
-    } catch {
-      // Ignore
-    }
+    } catch {}
     currentPlayer = null;
   }
 
@@ -26,9 +25,12 @@ export async function playAlarmSound(): Promise<void> {
       shouldRouteThroughEarpiece: false,
     });
 
-    const player = createAudioPlayer(
-      require('../../assets/sounds/alarm-default.wav'),
-    );
+    const { customSoundUri } = useSettingsStore.getState();
+    const source = customSoundUri
+      ? { uri: customSoundUri }
+      : require('../../assets/sounds/alarm-default.wav');
+
+    const player = createAudioPlayer(source);
     player.loop = true;
     player.volume = 1.0;
     player.play();
@@ -38,6 +40,38 @@ export async function playAlarmSound(): Promise<void> {
   } catch (error) {
     console.warn('Failed to play alarm sound:', error);
     startVibration();
+  }
+}
+
+export async function playPreviewSound(uri: string | null): Promise<void> {
+  await stopPreviewSound();
+
+  try {
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldRouteThroughEarpiece: false,
+    });
+
+    const source = uri
+      ? { uri }
+      : require('../../assets/sounds/alarm-default.wav');
+
+    previewPlayer = createAudioPlayer(source);
+    previewPlayer.loop = false;
+    previewPlayer.volume = 1.0;
+    previewPlayer.play();
+  } catch (error) {
+    console.warn('Failed to play preview sound:', error);
+  }
+}
+
+export async function stopPreviewSound(): Promise<void> {
+  if (previewPlayer) {
+    try {
+      previewPlayer.pause();
+      previewPlayer.release();
+    } catch {}
+    previewPlayer = null;
   }
 }
 

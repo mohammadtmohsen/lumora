@@ -98,7 +98,7 @@ export function AnimatedToggle({
 
 export function AlarmCard({ alarm, onToggle, onPress, onDelete }: Props) {
   const { width: screenWidth } = useWindowDimensions();
-  const deleteThreshold = -(screenWidth * 0.7);
+  const deleteThreshold = -(screenWidth * 0.5);
   const maxSwipe = -(screenWidth - 32);
 
   const isAbsolute = alarm.type === 'absolute';
