@@ -10,7 +10,7 @@ import { AlarmCard } from '../../src/components/AlarmCard';
 import { SunTimesDisplay } from '../../src/components/SunTimesDisplay';
 import { PermissionBanner } from '../../src/components/PermissionBanner';
 import { BatteryOptimizationPrompt } from '../../src/components/BatteryOptimizationPrompt';
-import { SettingsIcon, AlarmIcon } from '../../src/components/Icons';
+import { AlarmIcon } from '../../src/components/Icons';
 import { COLORS } from '../../src/utils/constants';
 import type { Alarm } from '../../src/models/types';
 
@@ -53,36 +53,12 @@ export default function HomeScreen() {
   const renderHeader = useCallback(
     () => (
       <View style={{ paddingTop: 8, paddingBottom: 8 }}>
-        {/* Sun times — scrolls with the list */}
         <SunTimesDisplay sunTimes={todaySunTimes} isValid={isValid} isRefreshing={locationLoading} />
-
         <PermissionBanner />
         <BatteryOptimizationPrompt />
-
-        {/* Section header */}
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            paddingHorizontal: 16,
-            marginTop: 16,
-            marginBottom: 12,
-          }}
-        >
-          <Text style={{ color: COLORS.textPrimary, fontSize: 18, fontWeight: '600' }}>Alarms</Text>
-          <Pressable
-            onPress={() => router.push('/settings')}
-            style={{ padding: 8, marginRight: -8 }}
-            accessibilityLabel="Settings"
-            accessibilityRole="button"
-          >
-            <SettingsIcon size={22} />
-          </Pressable>
-        </View>
       </View>
     ),
-    [router, todaySunTimes, isValid, locationLoading],
+    [todaySunTimes, isValid, locationLoading],
   );
 
   const renderEmpty = useCallback(

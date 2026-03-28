@@ -4,11 +4,11 @@ import {
   Text,
   ScrollView,
   Pressable,
-  Switch,
   Alert,
   Platform,
   Linking,
 } from 'react-native';
+import { AnimatedToggle } from '../src/components/AlarmCard';
 import { useLocation } from '../src/hooks/useLocation';
 import { useSettingsStore } from '../src/stores/settingsStore';
 import {
@@ -303,11 +303,10 @@ export default function SettingsScreen() {
           <Text style={{ color: COLORS.textPrimary, fontSize: 16 }}>
             Vibration
           </Text>
-          <Switch
+          <AnimatedToggle
             value={defaultVibrate}
-            onValueChange={setDefaultVibrate}
-            trackColor={{ false: COLORS.border, true: COLORS.primary }}
-            thumbColor='#ffffff'
+            onValueChange={() => setDefaultVibrate(!defaultVibrate)}
+            activeColor="#7c3aed"
           />
         </View>
       </View>
@@ -357,18 +356,18 @@ export default function SettingsScreen() {
                   notification shade
                 </Text>
               </View>
-              <Switch
+              <AnimatedToggle
                 value={showPersistentNotification}
-                onValueChange={(value) => {
-                  setShowPersistentNotification(value);
-                  if (value) {
+                onValueChange={() => {
+                  const next = !showPersistentNotification;
+                  setShowPersistentNotification(next);
+                  if (next) {
                     updatePersistentNotification();
                   } else {
                     cancelPersistentNotification();
                   }
                 }}
-                trackColor={{ false: COLORS.border, true: COLORS.primary }}
-                thumbColor='#ffffff'
+                activeColor={COLORS.primary}
               />
             </View>
           </View>

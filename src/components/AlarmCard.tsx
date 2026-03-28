@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable, useWindowDimensions } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -21,13 +21,12 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-const DELETE_THRESHOLD = -80;
 const TRACK_W = 48;
 const TRACK_H = 28;
 const THUMB_SIZE = 22;
 const THUMB_TRAVEL = TRACK_W - THUMB_SIZE - 6;
 
-function AnimatedToggle({
+export function AnimatedToggle({
   value,
   onValueChange,
   activeColor,
@@ -41,7 +40,7 @@ function AnimatedToggle({
   const progress = useSharedValue(value ? 1 : 0);
 
   useEffect(() => {
-    progress.value = withSpring(value ? 1 : 0, { damping: 15, stiffness: 180 });
+    progress.value = withTiming(value ? 1 : 0, { duration: 150 });
   }, [value]);
 
   const trackStyle = useAnimatedStyle(() => ({
@@ -98,6 +97,10 @@ function AnimatedToggle({
 }
 
 export function AlarmCard({ alarm, onToggle, onPress, onDelete }: Props) {
+  const { width: screenWidth } = useWindowDimensions();
+  const deleteThreshold = -(screenWidth * 0.7);
+  const maxSwipe = -(screenWidth - 32);
+
   const isAbsolute = alarm.type === 'absolute';
   const eventLabel = isAbsolute ? 'Fixed time' : alarm.referenceEvent === 'sunrise' ? 'Sunrise' : 'Sunset';
   const EventIconComponent = isAbsolute ? AlarmIcon : alarm.referenceEvent === 'sunrise' ? SunriseIcon : SunsetIcon;
@@ -105,24 +108,21 @@ export function AlarmCard({ alarm, onToggle, onPress, onDelete }: Props) {
 
   const translateX = useSharedValue(0);
 
-  const confirmDelete = useCallback(() => {
-    Alert.alert('Delete Alarm', `Delete "${alarm.name}"?`, [
-      { text: 'Cancel', style: 'cancel', onPress: () => { translateX.value = withSpring(0); } },
-      { text: 'Delete', style: 'destructive', onPress: () => onDelete(alarm.id) },
-    ]);
-  }, [alarm.id, alarm.name, onDelete]);
+  const doDelete = useCallback(() => {
+    onDelete(alarm.id);
+  }, [alarm.id, onDelete]);
 
   const swipeGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
     .onUpdate((event) => {
       if (event.translationX < 0) {
-        translateX.value = Math.max(event.translationX, -120);
+        translateX.value = Math.max(event.translationX, maxSwipe);
       }
     })
-    .onEnd((event) => {
-      if (event.translationX < DELETE_THRESHOLD) {
-        translateX.value = withTiming(-120);
-        runOnJS(confirmDelete)();
+    .onEnd(() => {
+      if (translateX.value < deleteThreshold) {
+        translateX.value = withTiming(maxSwipe, { duration: 200 });
+        runOnJS(doDelete)();
       } else {
         translateX.value = withSpring(0);
       }
@@ -132,24 +132,34 @@ export function AlarmCard({ alarm, onToggle, onPress, onDelete }: Props) {
     transform: [{ translateX: translateX.value }],
   }));
 
+  const deleteStyle = useAnimatedStyle(() => ({
+    width: Math.abs(Math.min(translateX.value, 0)),
+  }));
+
   return (
     <View style={{ marginHorizontal: 16, marginBottom: 10, borderRadius: 14, overflow: 'hidden' }}>
-      {/* Delete background */}
-      <View
-        style={{
-          position: 'absolute',
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: 120,
-          backgroundColor: COLORS.danger,
-          borderRadius: 14,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
+      {/* Delete background — grows with swipe */}
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            right: 0,
+            top: 0,
+            bottom: 0,
+            backgroundColor: COLORS.danger,
+            borderRadius: 14,
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+          deleteStyle,
+        ]}
       >
-        <Text style={{ color: '#ffffff', fontSize: 14, fontWeight: '600' }}>Delete</Text>
-      </View>
+        <View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 18, height: 2, backgroundColor: '#ffffff', borderRadius: 1, position: 'absolute', top: 4 }} />
+          <View style={{ width: 14, height: 16, borderRadius: 2, borderWidth: 1.5, borderColor: '#ffffff', marginTop: 4 }} />
+          <View style={{ width: 8, height: 2, backgroundColor: '#ffffff', borderRadius: 1, position: 'absolute', top: 2 }} />
+        </View>
+      </Animated.View>
 
       {/* Card */}
       <GestureDetector gesture={swipeGesture}>

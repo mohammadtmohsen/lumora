@@ -7,10 +7,11 @@ interface Props {
   title: string;
   canGoBack?: boolean;
   onBack?: () => void;
+  rightAction?: React.ReactNode;
   children?: React.ReactNode;
 }
 
-export function AppHeader({ title, canGoBack, onBack, children }: Props) {
+export function AppHeader({ title, canGoBack, onBack, rightAction, children }: Props) {
   const insets = useSafeAreaInsets();
 
   return (
@@ -33,6 +34,7 @@ export function AppHeader({ title, canGoBack, onBack, children }: Props) {
         >
           {title}
         </Text>
+        {rightAction}
       </View>
       {children}
     </View>

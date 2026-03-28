@@ -1,25 +1,26 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView, RefreshControl, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAlarmStore } from '../../../src/stores/alarmStore';
 import { useLocation } from '../../../src/hooks/useLocation';
 import { useSunTimes } from '../../../src/hooks/useSunTimes';
+import { SunTimesDisplay } from '../../../src/components/SunTimesDisplay';
+import { isSunTimesValid } from '../../../src/services/sunCalcService';
 import { TimeOffsetPicker } from '../../../src/components/TimeOffsetPicker';
 import { AbsoluteTimePicker } from '../../../src/components/AbsoluteTimePicker';
-import { scheduleAlarm, cancelAlarm, type ScheduleFailure } from '../../../src/services/alarmScheduler';
+import { scheduleAlarm, type ScheduleFailure } from '../../../src/services/alarmScheduler';
 import { updatePersistentNotification } from '../../../src/services/persistentNotificationService';
 import { formatTime, computeTriggerTime, computeAbsoluteTriggerTime } from '../../../src/utils/timeUtils';
-import { SunriseIcon } from '../../../src/components/Icons';
 import { COLORS } from '../../../src/utils/constants';
-import type { AlarmType } from '../../../src/models/types';
+import type { AlarmType, AlarmMode } from '../../../src/models/types';
 
 export default function EditAlarmScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const alarm = useAlarmStore((s) => s.alarms[id!]);
   const updateAlarm = useAlarmStore((s) => s.updateAlarm);
-  const deleteAlarm = useAlarmStore((s) => s.deleteAlarm);
+
   const { location, isLoading: locationLoading, fetchLocation } = useLocation();
   const { todaySunTimes } = useSunTimes(location);
 
@@ -43,6 +44,21 @@ export default function EditAlarmScreen() {
     const total = hours * 60 + minutes;
     return direction === 'before' ? -total : total;
   }, [hours, minutes, direction]);
+
+  const currentMode: AlarmMode = alarmType === 'absolute'
+    ? 'fixed'
+    : `${direction}-${referenceEvent}` as AlarmMode;
+
+  const handleModeChange = useCallback((newMode: AlarmMode) => {
+    if (newMode === 'fixed') {
+      setAlarmType('absolute');
+    } else {
+      setAlarmType('relative');
+      const [dir, event] = newMode.split('-') as ['before' | 'after', 'sunrise' | 'sunset'];
+      setDirection(dir);
+      setReferenceEvent(event);
+    }
+  }, []);
 
   const previewTime = useMemo(() => {
     if (alarmType === 'absolute') {
@@ -108,20 +124,6 @@ export default function EditAlarmScreen() {
     router.back();
   };
 
-  const handleDelete = () => {
-    Alert.alert('Delete Alarm', `Are you sure you want to delete "${alarm.name}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await cancelAlarm(alarm);
-          deleteAlarm(id!);
-          router.back();
-        },
-      },
-    ]);
-  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -138,13 +140,10 @@ export default function EditAlarmScreen() {
       }
     >
       {/* Name */}
-      <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 8, marginLeft: 4 }}>
-        ALARM NAME
-      </Text>
       <TextInput
         value={name}
         onChangeText={setName}
-        placeholder="e.g. Morning Run"
+        placeholder="Alarm name, e.g. Morning Run"
         placeholderTextColor={COLORS.textMuted}
         style={{
           backgroundColor: COLORS.surface,
@@ -152,147 +151,58 @@ export default function EditAlarmScreen() {
           padding: 16,
           color: COLORS.textPrimary,
           fontSize: 16,
-          marginBottom: 24,
+          marginBottom: 16,
         }}
       />
 
-      {/* Alarm Type Toggle */}
-      <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 8, marginLeft: 4 }}>
-        ALARM TYPE
-      </Text>
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
-        <Pressable
-          onPress={() => { Haptics.selectionAsync(); setAlarmType('relative'); }}
-          style={{
-            flex: 1,
-            paddingVertical: 14,
-            borderRadius: 12,
-            backgroundColor: alarmType === 'relative' ? COLORS.primary : COLORS.surface,
-            alignItems: 'center',
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <SunriseIcon size={18} />
-            <Text style={{ color: COLORS.textPrimary, fontSize: 15, fontWeight: alarmType === 'relative' ? '700' : '400' }}>
-              Sun-relative
-            </Text>
-          </View>
-        </Pressable>
-        <Pressable
-          onPress={() => { Haptics.selectionAsync(); setAlarmType('absolute'); }}
-          style={{
-            flex: 1,
-            paddingVertical: 14,
-            borderRadius: 12,
-            backgroundColor: alarmType === 'absolute' ? COLORS.primary : COLORS.surface,
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ color: COLORS.textPrimary, fontSize: 15, fontWeight: alarmType === 'absolute' ? '700' : '400' }}>
-            Fixed time
-          </Text>
-        </Pressable>
-      </View>
+      {/* Sun times display with interactive mode selector */}
+      <SunTimesDisplay
+        sunTimes={todaySunTimes}
+        isValid={!!todaySunTimes && isSunTimesValid(todaySunTimes)}
+        mode={currentMode}
+        onModeChange={handleModeChange}
+        alarmTime={previewTime}
+      />
 
-      {/* Conditional: Relative alarm fields */}
+      {/* Conditional: Relative offset picker */}
       {alarmType === 'relative' && (
-        <>
-          <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 8, marginLeft: 4 }}>
-            RELATIVE TO
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
-            {(['sunrise', 'sunset'] as const).map((event) => (
-              <Pressable
-                key={event}
-                onPress={() => setReferenceEvent(event)}
-                style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: referenceEvent === event ? (event === 'sunrise' ? COLORS.sunrise : COLORS.sunset) : COLORS.surface,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: referenceEvent === event ? '700' : '400' }}>
-                  {event === 'sunrise' ? 'Sunrise' : 'Sunset'}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 8, marginLeft: 4 }}>
-            DIRECTION
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
-            {(['before', 'after'] as const).map((dir) => (
-              <Pressable
-                key={dir}
-                onPress={() => setDirection(dir)}
-                style={{
-                  flex: 1,
-                  paddingVertical: 14,
-                  borderRadius: 12,
-                  backgroundColor: direction === dir ? COLORS.primary : COLORS.surface,
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: COLORS.textPrimary, fontSize: 16, fontWeight: direction === dir ? '700' : '400' }}>
-                  {dir === 'before' ? 'Before' : 'After'}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
-          <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 8, marginLeft: 4 }}>
-            OFFSET TIME
-          </Text>
-          <View style={{ backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginBottom: 24 }}>
-            <TimeOffsetPicker
-              hours={hours}
-              minutes={minutes}
-              onHoursChange={setHours}
-              onMinutesChange={setMinutes}
-            />
-          </View>
-        </>
+        <View style={{ backgroundColor: COLORS.surface, borderRadius: 12, padding: 12, marginTop: 16 }}>
+          <TimeOffsetPicker
+            hours={hours}
+            minutes={minutes}
+            onHoursChange={setHours}
+            onMinutesChange={setMinutes}
+          />
+        </View>
       )}
 
-      {/* Conditional: Absolute alarm fields */}
+      {/* Conditional: Absolute time picker */}
       {alarmType === 'absolute' && (
-        <>
-          <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 8, marginLeft: 4 }}>
-            ALARM TIME
-          </Text>
-          <View style={{ backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginBottom: 24 }}>
-            <AbsoluteTimePicker
-              hour={absoluteHour}
-              minute={absoluteMinute}
-              onHourChange={setAbsoluteHour}
-              onMinuteChange={setAbsoluteMinute}
-            />
-          </View>
-        </>
+        <View style={{ backgroundColor: COLORS.surface, borderRadius: 12, padding: 12, marginTop: 16 }}>
+          <AbsoluteTimePicker
+            hour={absoluteHour}
+            minute={absoluteMinute}
+            onHourChange={setAbsoluteHour}
+            onMinuteChange={setAbsoluteMinute}
+          />
+        </View>
       )}
 
-      {/* Preview */}
+      {/* Compact preview */}
       {previewTime && (
-        <View style={{ backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginBottom: 32, alignItems: 'center' }}>
-          <Text style={{ color: COLORS.textSecondary, fontSize: 13, marginBottom: 4 }}>
-            ALARM WILL RING AT
-          </Text>
-          <Text style={{ color: COLORS.accent, fontSize: 28, fontWeight: '700' }}>
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: 16,
+          gap: 8,
+        }}>
+          <Text style={{ color: COLORS.accent, fontSize: 18, fontWeight: '700' }}>
             {formatTime(previewTime)}
           </Text>
-          {alarmType === 'relative' && (
-            <Text style={{ color: COLORS.textMuted, fontSize: 13, marginTop: 4 }}>
-              Based on today's {referenceEvent}
-            </Text>
-          )}
-          {alarmType === 'absolute' && (
-            <Text style={{ color: COLORS.textMuted, fontSize: 13, marginTop: 4 }}>
-              Repeats daily
-            </Text>
-          )}
+          <Text style={{ color: COLORS.textMuted, fontSize: 13 }}>
+            {alarmType === 'relative' ? `based on ${referenceEvent}` : 'daily'}
+          </Text>
         </View>
       )}
 
@@ -304,6 +214,7 @@ export default function EditAlarmScreen() {
           borderRadius: 12,
           paddingVertical: 16,
           alignItems: 'center',
+          marginTop: 24,
           marginBottom: 12,
         })}
       >
@@ -312,22 +223,6 @@ export default function EditAlarmScreen() {
         </Text>
       </Pressable>
 
-      {/* Delete */}
-      <Pressable
-        onPress={handleDelete}
-        style={({ pressed }) => ({
-          backgroundColor: pressed ? '#3a1a1a' : 'transparent',
-          borderRadius: 12,
-          borderWidth: 1,
-          borderColor: COLORS.danger,
-          paddingVertical: 16,
-          alignItems: 'center',
-        })}
-      >
-        <Text style={{ color: COLORS.danger, fontSize: 16, fontWeight: '600' }}>
-          Delete Alarm
-        </Text>
-      </Pressable>
     </ScrollView>
     </KeyboardAvoidingView>
   );

@@ -15,11 +15,13 @@ function NumberStepper({
   value,
   onChange,
   max,
+  step = 1,
 }: {
   label: string;
   value: number;
   onChange: (v: number) => void;
   max: number;
+  step?: number;
 }) {
   return (
     <View
@@ -33,7 +35,7 @@ function NumberStepper({
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
         <Pressable
-          onPress={() => { Haptics.selectionAsync(); onChange(Math.max(0, value - 1)); }}
+          onPress={() => { Haptics.selectionAsync(); onChange(value - step < 0 ? Math.floor(max / step) * step : value - step); }}
           style={{
             width: 36,
             height: 36,
@@ -51,7 +53,7 @@ function NumberStepper({
           {String(value).padStart(2, '0')}
         </Text>
         <Pressable
-          onPress={() => { Haptics.selectionAsync(); onChange(Math.min(max, value + 1)); }}
+          onPress={() => { Haptics.selectionAsync(); onChange(value + step > max ? 0 : value + step); }}
           style={{
             width: 36,
             height: 36,
@@ -77,7 +79,7 @@ export function TimeOffsetPicker({ hours, minutes, onHoursChange, onMinutesChang
       <Text style={{ color: COLORS.textMuted, fontSize: 32, fontWeight: '700', marginTop: 16 }}>
         :
       </Text>
-      <NumberStepper label="Minutes" value={minutes} onChange={onMinutesChange} max={59} />
+      <NumberStepper label="Minutes" value={minutes} onChange={onMinutesChange} max={59} step={5} />
     </View>
   );
 }

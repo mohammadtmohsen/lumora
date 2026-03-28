@@ -1,4 +1,5 @@
 export type AlarmType = 'relative' | 'absolute';
+export type AlarmMode = 'before-sunrise' | 'after-sunrise' | 'before-sunset' | 'after-sunset' | 'fixed';
 
 export interface Alarm {
   id: string;
